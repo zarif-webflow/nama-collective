@@ -19,6 +19,7 @@ const getVarBGColor = () => {
   return videoUpperBg || "#ffffff";
 };
 
+/*
 const getVarLogoSize = () => {
   const root = document.documentElement;
   const logoSizeValue = getComputedStyle(root)
@@ -34,6 +35,7 @@ const getVarLogoSize = () => {
 
   return parseFloat(logoSizeValue);
 };
+*/
 
 const initHeroVideoReveal = () => {
   const canvas = getHtmlElement<HTMLCanvasElement>({ selector: SELECTORS.canvas, log: "error" });
@@ -64,7 +66,7 @@ const initHeroVideoReveal = () => {
     canvas.width = width + 1;
     canvas.height = height + 1;
 
-    drawMaskWithSize(width * 0.3);
+    drawMaskWithSize(canvas.width * 0.25, { originLeftRatio: 0.6405, originTopRatio: 0.38367 });
   };
 
   const drawFill = () => {
@@ -72,14 +74,24 @@ const initHeroVideoReveal = () => {
     canvasContext.fillRect(0, 0, canvas.width, canvas.height);
   };
 
-  const drawMaskWithSize = (logoWidth: number) => {
+  const drawMaskWithSize = (
+    logoWidth: number,
+    options: { originLeftRatio: number; originTopRatio: number }
+  ) => {
     drawFill();
 
     if (!logoImage || !isImageLoaded) return;
 
     const logoHeight = logoWidth / aspectRatio;
-    const x = (canvas.width - logoWidth) / 2;
-    const y = (canvas.height - logoHeight) / 2;
+
+    const logoOriginX = logoWidth * options.originLeftRatio;
+    const logoOriginY = logoHeight * options.originTopRatio;
+
+    const canvasCenterX = canvas.width / 2;
+    const canvasCenterY = canvas.height / 2;
+
+    const x = canvasCenterX - logoOriginX;
+    const y = canvasCenterY - logoOriginY;
 
     canvasContext.globalCompositeOperation = "destination-out";
     canvasContext.drawImage(logoImage, x, y, logoWidth, logoHeight);
