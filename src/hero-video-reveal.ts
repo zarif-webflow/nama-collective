@@ -56,17 +56,22 @@ const initHeroVideoReveal = () => {
 
   const bgColor = getVarBGColor();
 
-  //   Image State
+  // Image State
   let logoImage: HTMLImageElement | null = null;
   let aspectRatio = 1;
   let isImageLoaded = false;
+
+  // Animation States
+  let tl: gsap.core.Timeline | null = null;
+  let scrollTrig: ScrollTrigger | null = null;
 
   const initializeCanvas = () => {
     const { width, height } = canvasParent.getBoundingClientRect();
     canvas.width = width + 1;
     canvas.height = height + 1;
 
-    drawMaskWithSize(canvas.width * 0.25, { originLeftRatio: 0.6405, originTopRatio: 0.38367 });
+    drawMaskWithSize(320, { originLeftRatio: 0.5, originTopRatio: 0.5 });
+    // drawMaskWithSize(320, { originLeftRatio: 0.6405, originTopRatio: 0.38367 });
   };
 
   const drawFill = () => {
@@ -121,9 +126,47 @@ const initHeroVideoReveal = () => {
       isImageLoaded = true;
       URL.revokeObjectURL(url);
       initializeCanvas();
+      initializeAnimation();
     };
 
     img.src = url;
+  };
+
+  const initializeAnimation = () => {
+    if (tl) {
+      tl.kill();
+      tl = null;
+    }
+
+    if (scrollTrig) {
+      scrollTrig.kill();
+      scrollTrig = null;
+    }
+
+    const animationState = { logoWidth: 320, originLeftRatio: 0.5, originTopRatio: 0.5 };
+    const finalAnimationState = {
+      logoWidth: 14000,
+      originLeftRatio: 0.6405,
+      originTopRatio: 0.38367,
+    };
+
+    tl = gsap.timeline({});
+
+    tl.fromTo(animationState, { ...animationState }, { ...finalAnimationState, ease: "none" });
+
+    scrollTrig = ScrollTrigger.create({
+      animation: tl,
+      scrub: true,
+      trigger: scrollTarget,
+      start: "top top",
+      end: "bottom bottom",
+      onUpdate: () => {
+        drawMaskWithSize(animationState.logoWidth, {
+          originLeftRatio: animationState.originLeftRatio,
+          originTopRatio: animationState.originTopRatio,
+        });
+      },
+    });
   };
 
   drawFill();
