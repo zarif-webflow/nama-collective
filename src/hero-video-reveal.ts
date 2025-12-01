@@ -65,14 +65,14 @@ const initHeroVideoReveal = () => {
 
   let tlArray: gsap.core.Timeline[] = [];
   let scrollTrigArray: ScrollTrigger[] = [];
+  let anchorScaler: ReturnType<typeof createAnchoredScale> | null = null;
 
   const initializeCanvas = () => {
     const { width, height } = canvasParent.getBoundingClientRect();
     canvas.width = width + 1;
     canvas.height = height + 1;
 
-    drawMaskWithSize(320, { originLeftRatio: 0.5, originTopRatio: 0.5 });
-    // drawMaskWithSize(320, { originLeftRatio: 0.6405, originTopRatio: 0.38367 });
+    drawFill();
   };
 
   const drawFill = () => {
@@ -80,6 +80,7 @@ const initHeroVideoReveal = () => {
     canvasContext.fillRect(0, 0, canvas.width, canvas.height);
   };
 
+  /*
   const drawMaskWithSize = (
     logoWidth: number,
     options: { originLeftRatio: number; originTopRatio: number }
@@ -102,6 +103,53 @@ const initHeroVideoReveal = () => {
     canvasContext.globalCompositeOperation = "destination-out";
     canvasContext.drawImage(logoImage, x, y, logoWidth, logoHeight);
     canvasContext.globalCompositeOperation = "source-over";
+  };
+  */
+
+  const createAnchoredScale = (
+    initialWidth: number,
+    options: { originLeftRatio: number; originTopRatio: number }
+  ) => {
+    if (!logoImage || !isImageLoaded) return null;
+
+    drawFill();
+
+    // Initial centered position
+    const initialHeight = initialWidth / aspectRatio;
+    const canvasCenterX = canvas.width / 2;
+    const canvasCenterY = canvas.height / 2;
+    const initialX = canvasCenterX - initialWidth / 2;
+    const initialY = canvasCenterY - initialHeight / 2;
+
+    // Draw initial centered logo
+    canvasContext.globalCompositeOperation = "destination-out";
+    canvasContext.drawImage(logoImage, initialX, initialY, initialWidth, initialHeight);
+    canvasContext.globalCompositeOperation = "source-over";
+
+    // Calculate the anchor point position on canvas at initial state
+    const anchorCanvasX = initialX + initialWidth * options.originLeftRatio;
+    const anchorCanvasY = initialY + initialHeight * options.originTopRatio;
+
+    return {
+      scale: (targetWidth: number) => {
+        drawFill();
+
+        if (!logoImage) return;
+
+        const targetHeight = targetWidth / aspectRatio;
+
+        // Calculate new position so anchor point stays at same canvas position
+        const targetAnchorOffsetX = targetWidth * options.originLeftRatio;
+        const targetAnchorOffsetY = targetHeight * options.originTopRatio;
+
+        const x = anchorCanvasX - targetAnchorOffsetX;
+        const y = anchorCanvasY - targetAnchorOffsetY;
+
+        canvasContext.globalCompositeOperation = "destination-out";
+        canvasContext.drawImage(logoImage, x, y, targetWidth, targetHeight);
+        canvasContext.globalCompositeOperation = "source-over";
+      },
+    };
   };
 
   const loadLogoImage = () => {
@@ -127,6 +175,10 @@ const initHeroVideoReveal = () => {
       isImageLoaded = true;
       URL.revokeObjectURL(url);
       initializeCanvas();
+      anchorScaler = createAnchoredScale(320, {
+        originLeftRatio: 0.63,
+        originTopRatio: 0.717,
+      });
       initializeAnimation();
     };
 
@@ -145,12 +197,16 @@ const initHeroVideoReveal = () => {
     }
 
     const widthAnimationState = { logoWidth: 320 };
-    const widthFinalAnimationState = { logoWidth: 14000 };
+    const widthFinalAnimationState = { logoWidth: 12000 };
 
     const anchorAnimationState = {
-      originLeftRatio: 0.5,
-      originTopRatio: 0.5,
+      originLeftRatio: 0.63,
+      originTopRatio: 0.717,
     };
+    // const anchorAnimationState = {
+    //   originLeftRatio: 0.5,
+    //   originTopRatio: 0.5,
+    // };
     const anchorFinalAnimationState = {
       originLeftRatio: 0.63,
       originTopRatio: 0.717,
@@ -177,10 +233,11 @@ const initHeroVideoReveal = () => {
       start: "top top",
       end: "70% bottom",
       onUpdate: () => {
-        drawMaskWithSize(widthAnimationState.logoWidth, {
-          originLeftRatio: anchorAnimationState.originLeftRatio,
-          originTopRatio: anchorAnimationState.originTopRatio,
-        });
+        // drawMaskWithSize(widthAnimationState.logoWidth, {
+        //   originLeftRatio: anchorAnimationState.originLeftRatio,
+        //   originTopRatio: anchorAnimationState.originTopRatio,
+        // });
+        anchorScaler?.scale(widthAnimationState.logoWidth);
       },
     });
 
@@ -189,7 +246,7 @@ const initHeroVideoReveal = () => {
       scrub: true,
       trigger: scrollTarget,
       start: "top top",
-      end: "50% bottom",
+      end: "70% bottom",
     });
 
     tlArray.push(mainTl, anchorTl);
