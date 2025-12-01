@@ -159,7 +159,7 @@ const initHeroVideoReveal = () => {
       scrub: true,
       trigger: scrollTarget,
       start: "top top",
-      end: "bottom bottom",
+      end: "70% bottom",
       onUpdate: () => {
         drawMaskWithSize(animationState.logoWidth, {
           originLeftRatio: animationState.originLeftRatio,
