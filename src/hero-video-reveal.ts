@@ -10,6 +10,7 @@ const SELECTORS = {
   logo: "svg[hero-video-reveal=logo]",
   logoPlaceholder: "svg[hero-video-reveal=logo-placeholder]",
   placeholder: "[hero-video-reveal=placeholder]",
+  video: "video[hero-video-reveal=video]",
 };
 
 const getVarBGColor = () => {
@@ -44,6 +45,10 @@ const initHeroVideoReveal = () => {
   }) as SVGSVGElement;
   const placeholderEl = getHtmlElement<HTMLElement>({
     selector: SELECTORS.placeholder,
+    log: "error",
+  });
+  const videoEl = getHtmlElement<HTMLVideoElement>({
+    selector: SELECTORS.video,
     log: "error",
   });
 
@@ -86,32 +91,6 @@ const initHeroVideoReveal = () => {
     canvasContext.fillStyle = bgColor;
     canvasContext.fillRect(0, 0, canvas.width, canvas.height);
   };
-
-  /*
-  const drawMaskWithSize = (
-    logoWidth: number,
-    options: { originLeftRatio: number; originTopRatio: number }
-  ) => {
-    drawFill();
-
-    if (!logoImage || !isImageLoaded) return;
-
-    const logoHeight = logoWidth / aspectRatio;
-
-    const logoOriginX = logoWidth * options.originLeftRatio;
-    const logoOriginY = logoHeight * options.originTopRatio;
-
-    const canvasCenterX = canvas.width / 2;
-    const canvasCenterY = canvas.height / 2;
-
-    const x = canvasCenterX - logoOriginX;
-    const y = canvasCenterY - logoOriginY;
-
-    canvasContext.globalCompositeOperation = "destination-out";
-    canvasContext.drawImage(logoImage, x, y, logoWidth, logoHeight);
-    canvasContext.globalCompositeOperation = "source-over";
-  };
-  */
 
   const createAnchoredScale = (
     initialWidth: number,
@@ -159,7 +138,7 @@ const initHeroVideoReveal = () => {
     };
   };
 
-  const paintCanvasInitAnimation = () => {
+  const paintCanvasInitAnimation = ({ isFirstTime }: { isFirstTime?: boolean }) => {
     initializeCanvas();
     const initialLogoSize = getLogoWidth() || 320;
     anchorScaler = createAnchoredScale(initialLogoSize, {
@@ -167,7 +146,7 @@ const initHeroVideoReveal = () => {
       originTopRatio: SVG_SCALE_ANCHOR.originTopRatio,
     });
     anchorScaler?.scale(initialLogoSize);
-    initializeAnimation({ initialLogoSize: initialLogoSize });
+    initializeAnimation({ initialLogoSize: initialLogoSize, isFirstTime });
   };
 
   const loadLogoImage = () => {
@@ -193,14 +172,19 @@ const initHeroVideoReveal = () => {
       isImageLoaded = true;
       URL.revokeObjectURL(url);
 
-      paintCanvasInitAnimation();
-      hidePlaceholder();
+      paintCanvasInitAnimation({ isFirstTime: true });
     };
 
     img.src = url;
   };
 
-  const initializeAnimation = ({ initialLogoSize }: { initialLogoSize: number }) => {
+  const initializeAnimation = ({
+    initialLogoSize,
+    isFirstTime,
+  }: {
+    initialLogoSize: number;
+    isFirstTime?: boolean;
+  }) => {
     if (animeTL) {
       animeTL.kill();
       animeTL = null;
@@ -212,7 +196,8 @@ const initHeroVideoReveal = () => {
     }
 
     const widthAnimationState = { logoWidth: initialLogoSize };
-    const widthFinalAnimationState = { logoWidth: 12000 };
+    const widthFinalAnimationState = { logoWidth: canvas.height * 11 };
+    // const widthFinalAnimationState = { logoWidth: 12000 };
 
     animeTL = gsap.timeline({});
 
@@ -232,13 +217,19 @@ const initHeroVideoReveal = () => {
         anchorScaler?.scale(widthAnimationState.logoWidth);
       },
     });
+
+    if (isFirstTime) {
+      hidePlaceholder();
+    }
   };
 
   drawFill();
   loadLogoImage();
+  videoEl?.play();
 
   window.addEventListener("resize", () => {
-    paintCanvasInitAnimation();
+    paintCanvasInitAnimation({ isFirstTime: false });
+    videoEl?.play();
   });
 };
 
