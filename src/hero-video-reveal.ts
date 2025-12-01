@@ -10,6 +10,31 @@ const SELECTORS = {
   logo: "svg[hero-video-reveal=logo]",
 };
 
+const getVarBGColor = () => {
+  const root = document.documentElement;
+  const videoUpperBg = getComputedStyle(root)
+    .getPropertyValue("--_hero-scroll-animation---colors--video-upper-bg")
+    .trim();
+
+  return videoUpperBg || "#ffffff";
+};
+
+const getVarLogoSize = () => {
+  const root = document.documentElement;
+  const logoSizeValue = getComputedStyle(root)
+    .getPropertyValue("--_hero-scroll-animation---sizes--logo-initial-size")
+    .trim();
+
+  if (!logoSizeValue.endsWith("px")) {
+    console.error(
+      `Expected logo size in px, got: ${logoSizeValue}. CSS variable: --_hero-scroll-animation---sizes--logo-initial-size`
+    );
+    return null;
+  }
+
+  return parseFloat(logoSizeValue);
+};
+
 const initHeroVideoReveal = () => {
   const canvas = getHtmlElement<HTMLCanvasElement>({ selector: SELECTORS.canvas, log: "error" });
   const scrollTarget = getHtmlElement<HTMLElement>({
@@ -27,6 +52,8 @@ const initHeroVideoReveal = () => {
   const canvasParent = canvas.parentElement as HTMLElement;
   const canvasContext = canvas.getContext("2d") as CanvasRenderingContext2D;
 
+  const bgColor = getVarBGColor();
+
   //   Image State
   let logoImage: HTMLImageElement | null = null;
   let aspectRatio = 1;
@@ -36,11 +63,12 @@ const initHeroVideoReveal = () => {
     const { width, height } = canvasParent.getBoundingClientRect();
     canvas.width = width + 1;
     canvas.height = height + 1;
-    drawMaskWithSize(300);
+
+    drawMaskWithSize(width * 0.3);
   };
 
   const drawFill = () => {
-    canvasContext.fillStyle = "black";
+    canvasContext.fillStyle = bgColor;
     canvasContext.fillRect(0, 0, canvas.width, canvas.height);
   };
 
@@ -88,6 +116,10 @@ const initHeroVideoReveal = () => {
 
   drawFill();
   loadLogoImage();
+
+  window.addEventListener("resize", () => {
+    initializeCanvas();
+  });
 };
 
 initHeroVideoReveal();
