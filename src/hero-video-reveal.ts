@@ -8,6 +8,8 @@ const SELECTORS = {
   canvas: "canvas[hero-video-reveal=canvas]",
   scrollTarget: "[hero-video-reveal=scroll-target]",
   logo: "svg[hero-video-reveal=logo]",
+  logoPlaceholder: "svg[hero-video-reveal=logo-placeholder]",
+  placeholder: "[hero-video-reveal=placeholder]",
 };
 
 const getVarBGColor = () => {
@@ -24,24 +26,6 @@ const SVG_SCALE_ANCHOR = {
   originTopRatio: 0.717,
 };
 
-/*
-const getVarLogoSize = () => {
-  const root = document.documentElement;
-  const logoSizeValue = getComputedStyle(root)
-    .getPropertyValue("--_hero-scroll-animation---sizes--logo-initial-size")
-    .trim();
-
-  if (!logoSizeValue.endsWith("px")) {
-    console.error(
-      `Expected logo size in px, got: ${logoSizeValue}. CSS variable: --_hero-scroll-animation---sizes--logo-initial-size`
-    );
-    return null;
-  }
-
-  return parseFloat(logoSizeValue);
-};
-*/
-
 const initHeroVideoReveal = () => {
   const canvas = getHtmlElement<HTMLCanvasElement>({ selector: SELECTORS.canvas, log: "error" });
   const scrollTarget = getHtmlElement<HTMLElement>({
@@ -53,8 +37,17 @@ const initHeroVideoReveal = () => {
     selector: SELECTORS.logo,
     log: "error",
   }) as SVGSVGElement;
+  //   @ts-expect-error SVGSVGElement type
+  const logoPlaceholderSvg = getHtmlElement<HTMLElement>({
+    selector: SELECTORS.logoPlaceholder,
+    log: "error",
+  }) as SVGSVGElement;
+  const placeholderEl = getHtmlElement<HTMLElement>({
+    selector: SELECTORS.placeholder,
+    log: "error",
+  });
 
-  if (!canvas || !scrollTarget || !logoSvg) return;
+  if (!canvas || !scrollTarget || !logoSvg || !logoPlaceholderSvg || !placeholderEl) return;
 
   const canvasParent = canvas.parentElement as HTMLElement;
   const canvasContext = canvas.getContext("2d") as CanvasRenderingContext2D;
@@ -71,6 +64,15 @@ const initHeroVideoReveal = () => {
   let animeTL: gsap.core.Timeline | null = null;
   let scrollTrig: ScrollTrigger | null = null;
   let anchorScaler: ReturnType<typeof createAnchoredScale> | null = null;
+
+  const hidePlaceholder = () => {
+    gsap.to(placeholderEl, { opacity: 0, duration: 0.2 });
+  };
+
+  const getLogoWidth = () => {
+    const logoRect = logoPlaceholderSvg.getBoundingClientRect();
+    return logoRect.width;
+  };
 
   const initializeCanvas = () => {
     const { width, height } = canvasParent.getBoundingClientRect();
@@ -157,6 +159,17 @@ const initHeroVideoReveal = () => {
     };
   };
 
+  const paintCanvasInitAnimation = () => {
+    initializeCanvas();
+    const initialLogoSize = getLogoWidth() || 320;
+    anchorScaler = createAnchoredScale(initialLogoSize, {
+      originLeftRatio: SVG_SCALE_ANCHOR.originLeftRatio,
+      originTopRatio: SVG_SCALE_ANCHOR.originTopRatio,
+    });
+    anchorScaler?.scale(initialLogoSize);
+    initializeAnimation({ initialLogoSize: initialLogoSize });
+  };
+
   const loadLogoImage = () => {
     const svgData = new XMLSerializer().serializeToString(logoSvg);
     const svgBlob = new Blob([svgData], { type: "image/svg+xml" });
@@ -179,18 +192,15 @@ const initHeroVideoReveal = () => {
       logoImage = img;
       isImageLoaded = true;
       URL.revokeObjectURL(url);
-      initializeCanvas();
-      anchorScaler = createAnchoredScale(320, {
-        originLeftRatio: SVG_SCALE_ANCHOR.originLeftRatio,
-        originTopRatio: SVG_SCALE_ANCHOR.originTopRatio,
-      });
-      initializeAnimation();
+
+      paintCanvasInitAnimation();
+      hidePlaceholder();
     };
 
     img.src = url;
   };
 
-  const initializeAnimation = () => {
+  const initializeAnimation = ({ initialLogoSize }: { initialLogoSize: number }) => {
     if (animeTL) {
       animeTL.kill();
       animeTL = null;
@@ -201,7 +211,7 @@ const initHeroVideoReveal = () => {
       scrollTrig = null;
     }
 
-    const widthAnimationState = { logoWidth: 320 };
+    const widthAnimationState = { logoWidth: initialLogoSize };
     const widthFinalAnimationState = { logoWidth: 12000 };
 
     animeTL = gsap.timeline({});
@@ -228,7 +238,7 @@ const initHeroVideoReveal = () => {
   loadLogoImage();
 
   window.addEventListener("resize", () => {
-    initializeCanvas();
+    paintCanvasInitAnimation();
   });
 };
 
