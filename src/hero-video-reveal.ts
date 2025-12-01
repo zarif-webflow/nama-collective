@@ -62,8 +62,9 @@ const initHeroVideoReveal = () => {
   let isImageLoaded = false;
 
   // Animation States
-  let tl: gsap.core.Timeline | null = null;
-  let scrollTrig: ScrollTrigger | null = null;
+
+  let tlArray: gsap.core.Timeline[] = [];
+  let scrollTrigArray: ScrollTrigger[] = [];
 
   const initializeCanvas = () => {
     const { width, height } = canvasParent.getBoundingClientRect();
@@ -133,40 +134,66 @@ const initHeroVideoReveal = () => {
   };
 
   const initializeAnimation = () => {
-    if (tl) {
-      tl.kill();
-      tl = null;
+    if (tlArray.length > 0) {
+      tlArray.forEach((tl) => tl.kill());
+      tlArray = [];
     }
 
-    if (scrollTrig) {
-      scrollTrig.kill();
-      scrollTrig = null;
+    if (scrollTrigArray.length > 0) {
+      scrollTrigArray.forEach((scrollTrig) => scrollTrig.kill());
+      scrollTrigArray = [];
     }
 
-    const animationState = { logoWidth: 320, originLeftRatio: 0.5, originTopRatio: 0.5 };
-    const finalAnimationState = {
-      logoWidth: 14000,
-      originLeftRatio: 0.6405,
-      originTopRatio: 0.38367,
+    const widthAnimationState = { logoWidth: 320 };
+    const widthFinalAnimationState = { logoWidth: 14000 };
+
+    const anchorAnimationState = {
+      originLeftRatio: 0.5,
+      originTopRatio: 0.5,
+    };
+    const anchorFinalAnimationState = {
+      originLeftRatio: 0.63,
+      originTopRatio: 0.717,
     };
 
-    tl = gsap.timeline({});
+    const mainTl = gsap.timeline({});
+    const anchorTl = gsap.timeline({});
 
-    tl.fromTo(animationState, { ...animationState }, { ...finalAnimationState, ease: "none" });
+    mainTl.fromTo(
+      widthAnimationState,
+      { ...widthAnimationState },
+      { ...widthFinalAnimationState, ease: "none" }
+    );
+    anchorTl.fromTo(
+      anchorAnimationState,
+      { ...anchorAnimationState },
+      { ...anchorFinalAnimationState, ease: "none" }
+    );
 
-    scrollTrig = ScrollTrigger.create({
-      animation: tl,
+    const mainScrollTrig = ScrollTrigger.create({
+      animation: mainTl,
       scrub: true,
       trigger: scrollTarget,
       start: "top top",
       end: "70% bottom",
       onUpdate: () => {
-        drawMaskWithSize(animationState.logoWidth, {
-          originLeftRatio: animationState.originLeftRatio,
-          originTopRatio: animationState.originTopRatio,
+        drawMaskWithSize(widthAnimationState.logoWidth, {
+          originLeftRatio: anchorAnimationState.originLeftRatio,
+          originTopRatio: anchorAnimationState.originTopRatio,
         });
       },
     });
+
+    const anchorScrollTrig = ScrollTrigger.create({
+      animation: anchorTl,
+      scrub: true,
+      trigger: scrollTarget,
+      start: "top top",
+      end: "50% bottom",
+    });
+
+    tlArray.push(mainTl, anchorTl);
+    scrollTrigArray.push(mainScrollTrig, anchorScrollTrig);
   };
 
   drawFill();
