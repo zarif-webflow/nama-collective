@@ -22,6 +22,15 @@ const getVarBGColor = () => {
   return videoUpperBg || "#ffffff";
 };
 
+const getActiveScrollPercentageColor = () => {
+  const root = document.documentElement;
+  const activeScrollPercentage = getComputedStyle(root)
+    .getPropertyValue("--_hero-scroll-animation---sizes--active-scroll-percentage")
+    .trim();
+
+  return activeScrollPercentage || "90%";
+};
+
 const SVG_SCALE_ANCHOR = {
   originLeftRatio: 0.63,
   originTopRatio: 0.717,
@@ -197,7 +206,7 @@ const initHeroVideoReveal = () => {
 
     const widthAnimationState = { logoWidth: initialLogoSize };
     const widthFinalAnimationState = { logoWidth: canvas.height * 11 };
-    // const widthFinalAnimationState = { logoWidth: 12000 };
+    const activeScrollPercentage = getActiveScrollPercentageColor();
 
     animeTL = gsap.timeline({});
 
@@ -212,7 +221,7 @@ const initHeroVideoReveal = () => {
       scrub: true,
       trigger: scrollTarget,
       start: "top top",
-      end: "70% bottom",
+      end: `${activeScrollPercentage} bottom`,
       onUpdate: () => {
         anchorScaler?.scale(widthAnimationState.logoWidth);
       },
